@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!--
+  本地验证页：复刻 stage1st（Discuz X3.5）主题帖页的关键 DOM 结构。
+  所有用户名与内容均为合成数据，不含任何真实帖子内容。
+  覆盖场景：普通楼层 / a5 命中折叠 / 引用块独立折叠 / 全角变体 / 自己的楼层豁免 /
+            纯图片楼层（不可识别，预期保持可见）/ MutationObserver 动态插入
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<title>S1 a5 blocker · 本地验证页</title>
+<style>
+  body { font: 14px/1.6 system-ui, -apple-system, sans-serif; margin: 0; background: #fff; color: #333; }
+  #um { padding: 10px 16px; background: #f2f3f5; border-bottom: 1px solid #e1e4e8; }
+  #postlist { max-width: 900px; margin: 0 auto; }
+  .plhin { width: 100%; border-collapse: collapse; margin-bottom: 2px; background: #fbfbfc; }
+  .plhin td { border: 1px solid #e8eaed; vertical-align: top; padding: 10px; }
+  td.pls { width: 140px; }
+  .authi a.xw1 { font-weight: 600; color: #336699; text-decoration: none; }
+  .pct { margin: 6px 0; }
+  div.quote { border: 1px solid #d9e0e7; border-left: 3px solid #9db9d3; background: #f7f9fb; padding: 6px 10px; margin: 6px 0; }
+  div.quote blockquote { margin: 0; font-size: 12px; color: #666; }
+  .sign { color: #999; font-size: 12px; border-top: 1px dashed #e1e4e8; padding-top: 4px; margin-top: 8px; }
+  #testbar { position: sticky; top: 0; z-index: 50; background: #409eff; color: #fff; padding: 8px 16px; display: flex; gap: 12px; align-items: center; }
+  #testbar button { border: 0; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+  img.att { max-width: 320px; border: 1px solid #e1e4e8; display: block; }
+</style>
+</head>
+<body>
+
+<div id="testbar">
+  <strong>本地验证页（合成数据）</strong>
+  <button onclick="insertDynamicFloor()">动态插入 a5 楼层（测 MutationObserver）</button>
+  <span id="stat"></span>
+</div>
+
+<!-- 复刻登录头部：自己的 UID = 100000 -->
+<div id="um">
+  <strong class="vwmy"><a href="space-uid-100000.html" target="_blank">tester_self</a></strong>
+</div>
+
+<div id="postlist" class="pl bm">
+
+  <!-- 1. 普通楼层：无 a5，预期保持可见 -->
+  <div id="post_1001"><table id="pid1001" class="plhin" summary="pid1001" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1001" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200001.html" target="_blank" class="xw1">alice</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1001" href="javascript:;"><em>1</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1001">发表于 2026-8-21 11:20</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1001">今天直播看了吗，节奏不错</td></tr></table></div>
+     <div id="comment_1001" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"><div class="sign">普通签名</div></td></tr>
+  </table></div>
+
+  <!-- 2. a5 文字 repo：预期整层折叠，可展开，签名行一并隐藏 -->
+  <div id="post_1002"><table id="pid1002" class="plhin" summary="pid1002" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1002" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200002.html" target="_blank" class="xw1">bob</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1002" href="javascript:;"><em>2</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1002">发表于 2026-8-21 11:25</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1002">搬点repo：<br />a5：今天还是贴吧好啊，比别的地方好多了<br />：给我讲讲都有什么活</td></tr></table></div>
+     <div id="comment_1002" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"><div class="sign">bob 的签名</div></td></tr>
+  </table></div>
+
+  <!-- 3. 引用块含 a5、正文干净：预期只折叠引用块，楼层本体可见 -->
+  <div id="post_1003"><table id="pid1003" class="plhin" summary="pid1003" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1003" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200003.html" target="_blank" class="xw1">carol</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1003" href="javascript:;"><em>3</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1003">发表于 2026-8-21 11:30</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1003"><div class="quote"><blockquote><font color="#999999">bob 发表于 2026-8-21 11:25</font><br />搬点repo：a5：今天还是贴吧好啊</blockquote></div>楼上搬的这是什么</td></tr></table></div>
+     <div id="comment_1003" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"><div class="sign">carol 的签名</div></td></tr>
+  </table></div>
+
+  <!-- 4. 全角变体 ａ５：预期命中折叠（NFKC 归一化） -->
+  <div id="post_1004"><table id="pid1004" class="plhin" summary="pid1004" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1004" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200004.html" target="_blank" class="xw1">dave</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1004" href="javascript:;"><em>4</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1004">发表于 2026-8-21 11:35</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1004">ａ５ 又开播了，速来</td></tr></table></div>
+     <div id="comment_1004" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"></td></tr>
+  </table></div>
+
+  <!-- 5. 自己的楼层（uid=100000 与 #um 一致）：正文含 a5，预期豁免不折叠 -->
+  <div id="post_1005"><table id="pid1005" class="plhin" summary="pid1005" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1005" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-100000.html" target="_blank" class="xw1">tester_self</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1005" href="javascript:;"><em>5</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1005">发表于 2026-8-21 11:40</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1005">我自己提一句 a5，用于测试豁免，不应被折叠</td></tr></table></div>
+     <div id="comment_1005" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"></td></tr>
+  </table></div>
+
+  <!-- 6. 纯图片楼层（无文字）：已知局限，预期保持可见 -->
+  <div id="post_1006"><table id="pid1006" class="plhin" summary="pid1006" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1006" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200006.html" target="_blank" class="xw1">frank</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1006" href="javascript:;"><em>6</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1006">发表于 2026-8-21 11:45</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1006">
+      <div class="mbn"><img class="att" alt="synthetic.jpg" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='120'%3E%3Crect width='100%25' height='100%25' fill='%23dfe6ee'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23888' font-size='14'%3E%E5%90%88%E6%88%90%E6%88%AA%E5%9B%BE%3C/text%3E%3C/svg%3E" /></div>
+     </td></tr></table></div>
+     <div id="comment_1006" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"></td></tr>
+  </table></div>
+
+</div>
+
+<script>
+  // 动态插入一个 a5 楼层，验证 MutationObserver 自动处理
+  function insertDynamicFloor() {
+    var pid = 1007 + Math.floor(Math.random() * 1000);
+    var div = document.createElement('div');
+    div.id = 'post_' + pid;
+    div.innerHTML =
+      '<table id="pid' + pid + '" class="plhin" summary="pid' + pid + '">' +
+      '<tr><td class="pls" rowspan="2"><div class="pls cl favatar"><div class="pi"><div class="authi">' +
+      '<a href="space-uid-200009.html" class="xw1">newuser</a></div></div></div></td>' +
+      '<td class="plc"><div class="pi"><strong><a id="postnum' + pid + '"><em>7</em><sup>#</sup></a></strong>' +
+      '<div class="pti"><div class="authi"><em>发表于 动态</em></div></div></div>' +
+      '<div class="pct"><div class="pcb"><div class="t_fsz"><table><tr>' +
+      '<td class="t_f" id="postmessage_' + pid + '">动态插入：a5 repo 测试</td>' +
+      '</tr></table></div></div></div></td></tr>' +
+      '<tr><td class="plc plm"></td></tr></table>';
+    document.getElementById('postlist').appendChild(div);
+  }
+</script>
+<script src="../s1-a5-blocker.user.js"></script>
+</body>
+</html>
