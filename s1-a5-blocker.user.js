@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S1 a5 内容屏蔽器
 // @namespace    https://github.com/pwzzy6/a5-spam-blocker
-// @version      0.1.0
+// @version      0.1.1
 // @description  折叠 stage1st（S1）帖子页中包含 a5（哎小呜）内容的楼层与引用块，点击可展开
 // @author       pwzzy6
 // @match        https://stage1st.com/2b/*
@@ -20,11 +20,14 @@
 
   // ============ 纯函数（供单测复用） ============
 
-  // 归一化：NFKC 折叠全角/兼容字符（ａ５ → a5），小写化，去除空白与零宽字符
+  // 归一化：NFKC 折叠全角/兼容字符（ａ５ → a5），小写化，剔除 URL（链接里的 a5 不参与匹配，防误封；
+  // 替换为 \u0000 占位而非删除，避免剔除后两侧字符拼接出新命中），去除空白与零宽字符
   function normalizeText(s) {
     return String(s == null ? '' : s)
       .normalize('NFKC')
       .toLowerCase()
+      .replace(/https?:\/\/\S+/g, '\u0000')
+      .replace(/\bwww\.\S+/g, '\u0000')
       .replace(/[\s\u200b-\u200f\u2028\u2029\u2060\ufeff]/g, '');
   }
 
@@ -33,7 +36,9 @@
     const n = normalizeText(text);
     for (const kw of keywords) {
       const k = normalizeText(kw);
-      if (k && n.includes(k)) return k;
+      // 归一化后仅剩 URL 占位符的关键词（如纯链接）匹配不到任何正文，跳过，防止变成「命中一切带链接楼层」的通配符
+      if (!k.replace(/\u0000/g, '')) continue;
+      if (n.includes(k)) return k;
     }
     return null;
   }
@@ -104,7 +109,18 @@
   function textWithoutQuotes(msgEl) {
     const clone = msgEl.cloneNode(true);
     clone.querySelectorAll('div.quote').forEach((q) => q.remove());
-    return clone.textContent;
+    return withBoundaries(clone);
+  }
+
+  // 匹配用文本：在 <br>/<a> 边界补空白。textContent 不含元素边界，链接或换行后紧跟的
+  // 正文会与 URL 粘连成同一 token，被 URL 剔除的 \S+ 一并吞掉（漏判）；补空白后剔除只吃 URL 本身。
+  // 注意：会原地修改传入节点（插入空白文本节点），只可传克隆/detached 节点
+  function withBoundaries(el) {
+    el.querySelectorAll('br, a').forEach((n) => {
+      n.before(document.createTextNode(' '));
+      n.after(document.createTextNode(' '));
+    });
+    return el.textContent;
   }
 
   // ============ 折叠/展开 ============
@@ -169,7 +185,7 @@
     msgEl.querySelectorAll('div.quote').forEach(function (quoteEl) {
       if (quoteEl.dataset.s1a5Done) return;
       quoteEl.dataset.s1a5Done = '1';
-      const hit = matchKeywords(quoteEl.textContent, settings.keywords);
+      const hit = matchKeywords(withBoundaries(quoteEl.cloneNode(true)), settings.keywords);
       if (!hit) return;
       if (settings.debug) debugMark(quoteEl, hit);
       else collapseQuote(quoteEl, hit);

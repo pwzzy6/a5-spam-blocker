@@ -24,6 +24,13 @@ describe('normalizeText', () => {
     expect(normalizeText(null)).toBe('');
     expect(normalizeText(undefined)).toBe('');
   });
+  test('剔除 URL（防止链接里的 a5 误伤）', () => {
+    // URL 替换为 \u0000 占位而非删除，避免两侧字符拼接出新命中（选A<URL>5号 不得拼成 a5）
+    expect(normalizeText('看 https://img.example.com/a5/x.jpg 很好')).toBe('看\u0000很好');
+    expect(normalizeText('HTTPS://EXAMPLE.COM/A5')).toBe('\u0000');
+    expect(normalizeText('www.imgur.com/a5abc.png')).toBe('\u0000');
+    expect(normalizeText('ｈｔｔｐｓ：//example.com/a5/x')).toBe('\u0000');
+  });
 });
 
 describe('matchKeywords', () => {
@@ -50,11 +57,29 @@ describe('matchKeywords', () => {
   test('空关键词被忽略', () => {
     expect(matchKeywords('xx', ['', '  '])).toBeNull();
   });
+  test('URL 形态关键词被忽略（不成为命中一切链接的通配符）', () => {
+    expect(matchKeywords('正常发言 https://weibo.com/abc 大家看', ['https://x.com/a5'])).toBeNull();
+    expect(matchKeywords('看看 www.baidu.com', ['www.a5.com'])).toBeNull();
+  });
+  test('含 URL 的混合关键词仍按占位符语义匹配', () => {
+    expect(matchKeywords('看 https://x.com/a5 图 哈哈', ['看 https://x.com/a5 图'])).toBe('看\u0000图');
+  });
   test('关键词本身也做归一化', () => {
     expect(matchKeywords('A5', ['Ａ５'])).toBe('a5');
     expect(matchKeywords('哎小呜', ['哎 小 呜'])).toBe('哎小呜');
   });
   test('子串语义（ba5 也命中）', () => {
     expect(matchKeywords('xba5c', kws)).toBe('a5');
+  });
+  test('URL 豁免：链接里的 a5 不命中', () => {
+    expect(matchKeywords('https://b23.tv/a5abc', kws)).toBeNull();
+    expect(matchKeywords('链接 https://x.com/a5_yy 不错', kws)).toBeNull();
+  });
+  test('URL 剔除不拼接两侧字符', () => {
+    expect(matchKeywords('选A https://x.com/vote 5号', kws)).toBeNull();
+    expect(matchKeywords('哎 https://x.com 小呜', kws)).toBeNull();
+  });
+  test('URL 豁免不放过正文里的 a5 文字', () => {
+    expect(matchKeywords('a5仓库 https://github.com/x/a5', kws)).toBe('a5');
   });
 });

@@ -3,7 +3,8 @@
   本地验证页：复刻 stage1st（Discuz X3.5）主题帖页的关键 DOM 结构。
   所有用户名与内容均为合成数据，不含任何真实帖子内容。
   覆盖场景：普通楼层 / a5 命中折叠 / 引用块独立折叠 / 全角变体 / 自己的楼层豁免 /
-            纯图片楼层（不可识别，预期保持可见）/ MutationObserver 动态插入
+            纯图片楼层（不可识别，预期保持可见）/ URL 含 a5（豁免不折叠）/
+            URL 行后紧跟 a5 正文（豁免 URL 但正文照常命中）/ MutationObserver 动态插入
 -->
 <html>
 <head>
@@ -175,12 +176,56 @@
   <tr><td class="plc plm"></td></tr>
   </table></div>
 
+  <!-- 7. URL 含 a5（自动链接锚文本 + www 纯文本）：预期不折叠（URL 豁免） -->
+  <div id="post_1008"><table id="pid1008" class="plhin" summary="pid1008" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1008" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200008.html" target="_blank" class="xw1">grace</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1008" href="javascript:;"><em>7</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1008">发表于 2026-8-21 11:50</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1008">图在这：<a href="https://img.example.com/a5/cat.jpg" target="_blank">https://img.example.com/a5/cat.jpg</a><br />备份：www.imgur.com/a5abc.png</td></tr></table></div>
+     <div id="comment_1008" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"></td></tr>
+  </table></div>
+
+  <!-- 8. URL 行 + 换行后 a5 正文：URL 豁免但正文照常命中，预期整层折叠 -->
+  <div id="post_1009"><table id="pid1009" class="plhin" summary="pid1009" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1009" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200010.html" target="_blank" class="xw1">heidi</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1009" href="javascript:;"><em>8</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1009">发表于 2026-8-21 11:55</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1009"><a href="https://img.example.com/a5/cat.jpg" target="_blank">https://img.example.com/a5/cat.jpg</a><br />a5：今天的repo整理</td></tr></table></div>
+     <div id="comment_1009" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"></td></tr>
+  </table></div>
+
 </div>
 
 <script>
-  // 动态插入一个 a5 楼层，验证 MutationObserver 自动处理
+  // 动态插入一个 a5 楼层，验证 MutationObserver 自动处理（pid 从 1108 起，避开静态楼层 1001–1009）
   function insertDynamicFloor() {
-    var pid = 1007 + Math.floor(Math.random() * 1000);
+    var pid = 1108 + Math.floor(Math.random() * 1000);
     var div = document.createElement('div');
     div.id = 'post_' + pid;
     div.innerHTML =
