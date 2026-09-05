@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S1 a5 内容屏蔽器
 // @namespace    https://github.com/pwzzy6/a5-spam-blocker
-// @version      0.1.3
+// @version      0.1.4
 // @description  折叠 stage1st（S1）帖子页中包含 a5（哎小呜）内容的楼层与引用块，点击可展开
 // @author       pwzzy6
 // @match        https://stage1st.com/2b/*
@@ -25,7 +25,7 @@
   // ============ 纯函数（供单测复用） ============
 
   // 当前版本；必须与头部 @version 一致（单测有一致性校验）
-  const SCRIPT_VERSION = '0.1.3';
+  const SCRIPT_VERSION = '0.1.4';
 
   // 更新检查源（国内可直连的 jsDelivr 双域名，任一可达即止）；
   // 请求前按 UPDATE_HOSTS 白名单校验 host，只放行 https + 这两个域名
@@ -78,7 +78,7 @@
 
   const DEFAULTS = {
     enabled: true,
-    keywords: ['a5', '哎小呜'],
+    keywords: ['a5', '哎小呜', '字母数字'],
     debug: false,   // 调试模式：高亮命中而不折叠
     skipSelf: true, // 不屏蔽自己的楼层
   };
@@ -253,18 +253,33 @@
 
   // ============ 折叠/展开 ============
 
-  function makeHolder(text, onToggle) {
+  // opts: { variant: 'post'|'quote', label: 占位文案前缀, hit: 命中关键词 }
+  // 命中关键词用 b 元素染色；全部用 DOM API 构造，关键词含 HTML 也不会注入
+  function makeHolder(opts, onToggle) {
     const holder = document.createElement('div');
-    holder.className = 's1a5-holder';
-    holder.innerHTML = '<span class="s1a5-holder-text"></span><a class="s1a5-holder-btn" href="javascript:;">展开</a>';
-    holder.querySelector('.s1a5-holder-text').textContent = text;
+    holder.className = 's1a5-holder s1a5-holder--' + opts.variant;
+    const text = document.createElement('span');
+    text.className = 's1a5-holder-text';
+    text.appendChild(document.createTextNode(opts.label + ' · 命中「'));
+    const hitEl = document.createElement('b');
+    hitEl.className = 's1a5-holder-hit';
+    hitEl.textContent = opts.hit;
+    text.appendChild(hitEl);
+    text.appendChild(document.createTextNode('」'));
+    const btn = document.createElement('a');
+    btn.className = 's1a5-holder-btn';
+    btn.href = 'javascript:;';
+    btn.textContent = '展开';
     let expanded = false;
-    holder.querySelector('.s1a5-holder-btn').addEventListener('click', function (ev) {
+    btn.addEventListener('click', function (ev) {
       ev.preventDefault();
       expanded = !expanded;
-      this.textContent = expanded ? '收起' : '展开';
+      btn.textContent = expanded ? '收起' : '展开';
+      holder.classList.toggle('s1a5-holder--open', expanded);
       onToggle(expanded);
     });
+    holder.appendChild(text);
+    holder.appendChild(btn);
     return holder;
   }
 
@@ -273,7 +288,7 @@
     if (!pct) return;
     const signRow = (postEl.querySelector('td.plc.plm') || {}).parentNode || null;
     const floor = getFloorNum(postEl);
-    const holder = makeHolder('已屏蔽 a5 内容' + (floor ? '（#' + floor + '）' : '') + ' · 命中「' + hit + '」', function (expanded) {
+    const holder = makeHolder({ variant: 'post', label: '已屏蔽 a5 内容' + (floor ? '（#' + floor + '）' : ''), hit: hit }, function (expanded) {
       pct.style.display = expanded ? '' : 'none';
       if (signRow) signRow.style.display = expanded ? '' : 'none';
     });
@@ -285,7 +300,7 @@
   function collapseQuote(quoteEl, hit) {
     const blockquote = quoteEl.querySelector('blockquote');
     const target = blockquote || quoteEl;
-    const holder = makeHolder('已折叠 a5 引用 · 命中「' + hit + '」', function (expanded) {
+    const holder = makeHolder({ variant: 'quote', label: '已折叠 a5 引用', hit: hit }, function (expanded) {
       target.style.display = expanded ? '' : 'none';
     });
     target.parentNode.insertBefore(holder, target);
@@ -411,23 +426,28 @@
 
   function injectStyles() {
     const css = [
-      '.s1a5-holder{margin:4px 0;padding:6px 10px;background:#f5f6f7;border:1px dashed #c0c6cf;border-radius:4px;color:#909399;font-size:12px;line-height:1.6;cursor:default;}',
-      '.s1a5-holder .s1a5-holder-btn{margin-left:10px;color:#409eff;cursor:pointer;}',
+      // 折叠占位条：对齐论坛 div.quote 视觉（浅蓝底 + 左竖线 + 论坛蓝 #336699）
+      '.s1a5-holder{margin:6px 0;padding:6px 10px;background:#f7f9fb;border:1px solid #d9e0e7;border-left:3px solid #9db9d3;border-radius:2px;color:#666;font-size:12px;line-height:1.6;cursor:default;}',
+      '.s1a5-holder--quote{margin:4px 0;padding:2px 8px;border-left-width:2px;color:#999;}',
+      '.s1a5-holder--open{background:#fbfbfc;}',
+      '.s1a5-holder .s1a5-holder-hit{color:#336699;font-weight:600;}',
+      '.s1a5-holder .s1a5-holder-btn{margin-left:10px;color:#336699;cursor:pointer;}',
+      '.s1a5-holder .s1a5-holder-btn:hover{color:#1f4e79;text-decoration:underline;}',
       '.s1a5-debug{outline:2px solid #f56c6c !important;outline-offset:-2px;position:relative;}',
       '.s1a5-debug-badge{position:absolute;top:0;right:0;z-index:99;background:#f56c6c;color:#fff;font-size:12px;padding:1px 6px;border-radius:0 0 0 4px;}',
-      '.s1a5-fab{position:fixed;right:16px;bottom:16px;z-index:99998;background:#409eff;color:#fff;font-size:12px;padding:6px 12px;border-radius:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);}',
-      '.s1a5-updbar{position:fixed;top:0;left:0;right:0;z-index:99997;display:flex;align-items:center;justify-content:center;gap:14px;background:#409eff;color:#fff;font-size:13px;padding:8px 16px;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.2);}',
+      '.s1a5-fab{position:fixed;right:16px;bottom:16px;z-index:99998;background:#336699;color:#fff;font-size:12px;padding:6px 12px;border-radius:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);}',
+      '.s1a5-updbar{position:fixed;top:0;left:0;right:0;z-index:99997;display:flex;align-items:center;justify-content:center;gap:14px;background:#336699;color:#fff;font-size:13px;padding:8px 16px;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.2);}',
       '.s1a5-updbar .s1a5-updbar-btn{color:#fff;font-weight:600;text-decoration:underline;}',
       '.s1a5-updbar .s1a5-updbar-ignore{color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;}',
       '.s1a5-updbar.s1a5-tip{background:#67c23a;justify-content:center;}',
       '.s1a5-panel{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;}',
-      '.s1a5-panel-box{background:#fff;border-radius:8px;padding:20px 24px;width:420px;max-width:92vw;font-size:13px;color:#303133;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:system-ui,-apple-system,sans-serif;}',
+      '.s1a5-panel-box{background:#fff;border-radius:8px;padding:20px 24px;width:420px;max-width:92vw;font-size:13px;color:#333;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:system-ui,-apple-system,sans-serif;}',
       '.s1a5-panel-box h3{margin:0 0 12px;font-size:15px;}',
       '.s1a5-panel-box .s1a5-row{display:block;margin:8px 0;}',
-      '.s1a5-panel-box textarea{width:100%;box-sizing:border-box;border:1px solid #dcdfe6;border-radius:4px;padding:6px 8px;font:inherit;margin-top:4px;}',
+      '.s1a5-panel-box textarea{width:100%;box-sizing:border-box;border:1px solid #e1e4e8;border-radius:4px;padding:6px 8px;font:inherit;margin-top:4px;}',
       '.s1a5-panel-box .s1a5-actions{margin-top:14px;display:flex;gap:8px;}',
-      '.s1a5-panel-box button{border:1px solid #dcdfe6;background:#fff;border-radius:4px;padding:5px 14px;cursor:pointer;font-size:13px;}',
-      '.s1a5-panel-box button[name=save]{background:#409eff;border-color:#409eff;color:#fff;}',
+      '.s1a5-panel-box button{border:1px solid #e1e4e8;background:#fff;border-radius:4px;padding:5px 14px;cursor:pointer;font-size:13px;}',
+      '.s1a5-panel-box button[name=save]{background:#336699;border-color:#336699;color:#fff;}',
     ].join('\n');
     const style = document.createElement('style');
     style.textContent = css;
