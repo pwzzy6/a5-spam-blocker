@@ -6,18 +6,30 @@
 
 **方式一：链接安装（推荐，可自动更新）**
 
-已安装 [Tampermonkey](https://www.tampermonkey.net/) 的浏览器直接打开：
+已安装 [Tampermonkey](https://www.tampermonkey.net/) 的浏览器直接打开任一链接，Tampermonkey 会弹出安装确认页，点击「安装」即可：
 
-```
-https://raw.githubusercontent.com/pwzzy6/a5-spam-blocker/main/s1-a5-blocker.user.js
-```
+- **jsDelivr（国内可直连，脚本的更新源）**：
 
-Tampermonkey 会弹出安装确认页，点击「安装」即可。
+  ```
+  https://fastly.jsdelivr.net/gh/pwzzy6/a5-spam-blocker@main/s1-a5-blocker.user.js
+  ```
+
+- **GitHub raw（需海外网络或代理）**：
+
+  ```
+  https://raw.githubusercontent.com/pwzzy6/a5-spam-blocker/main/s1-a5-blocker.user.js
+  ```
 
 **方式二：手动安装**
 
-1. 打开上面链接，全选复制脚本内容
+1. 打开上面任一链接，全选复制脚本内容
 2. Tampermonkey 面板 → 添加新脚本 → 粘贴 → 保存
+
+## 更新说明（国内网络必读）
+
+- Tampermonkey 的自动更新是浏览器后台定期请求脚本 `@updateURL`；本脚本的更新源是 jsDelivr，国内一般可直连
+- 早期版本（≤ 0.1.1）的更新源是 `raw.githubusercontent.com`，该域名在国内被墙，更新检查会**静默失败**（不弹任何提示，版本号一直不变）。如果卡在旧版本：挂代理 → Tampermonkey 面板 → 实用工具（Utilities）→「检查用户脚本更新」，手动更新到 0.1.2 后即改走 jsDelivr，以后无需代理
+- jsDelivr 对 `@main` 分支引用有约 12 小时缓存，新版发布后镜像端最多延迟半天；急用可直接走 GitHub raw 链接重装
 
 ## 功能
 

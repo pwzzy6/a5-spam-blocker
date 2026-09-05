@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S1 a5 内容屏蔽器
 // @namespace    https://github.com/pwzzy6/a5-spam-blocker
-// @version      0.1.1
+// @version      0.1.2
 // @description  折叠 stage1st（S1）帖子页中包含 a5（哎小呜）内容的楼层与引用块，点击可展开
 // @author       pwzzy6
 // @match        https://stage1st.com/2b/*
@@ -10,8 +10,8 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
-// @updateURL    https://raw.githubusercontent.com/pwzzy6/a5-spam-blocker/main/s1-a5-blocker.user.js
-// @downloadURL  https://raw.githubusercontent.com/pwzzy6/a5-spam-blocker/main/s1-a5-blocker.user.js
+// @updateURL    https://fastly.jsdelivr.net/gh/pwzzy6/a5-spam-blocker@main/s1-a5-blocker.user.js
+// @downloadURL  https://fastly.jsdelivr.net/gh/pwzzy6/a5-spam-blocker@main/s1-a5-blocker.user.js
 // @license      MIT
 // ==/UserScript==
 
