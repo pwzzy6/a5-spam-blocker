@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 // userscript 在非浏览器环境下只导出纯函数，不触碰 DOM
-const { normalizeText, matchKeywords } = require('../s1-a5-blocker.user.js');
+const { normalizeText, matchKeywords, isNewerVersion, SCRIPT_VERSION } = require('../s1-a5-blocker.user.js');
 
 describe('normalizeText', () => {
   test('全角折半角', () => {
@@ -81,5 +81,39 @@ describe('matchKeywords', () => {
   });
   test('URL 豁免不放过正文里的 a5 文字', () => {
     expect(matchKeywords('a5仓库 https://github.com/x/a5', kws)).toBe('a5');
+  });
+});
+
+describe('isNewerVersion', () => {
+  test('高版本返回 true', () => {
+    expect(isNewerVersion('0.1.3', '0.1.2')).toBe(true);
+    expect(isNewerVersion('0.1.10', '0.1.9')).toBe(true); // 数字比较而非字典序
+    expect(isNewerVersion('0.2.0', '0.1.9')).toBe(true);
+    expect(isNewerVersion('1.0.0', '0.9.9')).toBe(true);
+  });
+  test('相同或更低版本返回 false', () => {
+    expect(isNewerVersion('0.1.3', '0.1.3')).toBe(false);
+    expect(isNewerVersion('0.1.2', '0.1.3')).toBe(false);
+    expect(isNewerVersion('0.1.9', '0.1.10')).toBe(false);
+  });
+  test('段数不同按缺省 0 补齐', () => {
+    expect(isNewerVersion('0.1.1', '0.1')).toBe(true);
+    expect(isNewerVersion('0.1', '0.1.0')).toBe(false);
+  });
+  test('畸形输入一律 false（不弹更新）', () => {
+    expect(isNewerVersion('', '0.1.3')).toBe(false);
+    expect(isNewerVersion('v0.2.0', '0.1.3')).toBe(false);
+    expect(isNewerVersion('0.1.x', '0.1.3')).toBe(false);
+    expect(isNewerVersion(null, '0.1.3')).toBe(false);
+    expect(isNewerVersion(undefined, '0.1.3')).toBe(false);
+  });
+});
+
+describe('版本一致性', () => {
+  test('metadata @version 与 SCRIPT_VERSION 导出一致', async () => {
+    const src = await Bun.file(new URL('../s1-a5-blocker.user.js', import.meta.url)).text();
+    const m = /^\/\/ @version\s+(\S+)$/m.exec(src);
+    expect(m).not.toBeNull();
+    expect(m[1]).toBe(SCRIPT_VERSION);
   });
 });
