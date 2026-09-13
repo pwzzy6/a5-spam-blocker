@@ -84,6 +84,46 @@ describe('matchKeywords', () => {
   });
 });
 
+describe('图片链接豁免', () => {
+  const kws = ['a5', '哎小呜'];
+  test('裸域名图片 URL 不命中（无协议也豁免）', () => {
+    expect(normalizeText('图 i.imgur.com/a5abc.png 看看')).toBe('图\u0000看看');
+    expect(normalizeText('x.com/a5.png?v=1')).toBe('\u0000');
+  });
+  test('[img] BBCode 残留不命中（含 [img=url] 形式）', () => {
+    expect(normalizeText('[img]https://x.com/a5.png[/img]')).toBe('\u0000');
+    expect(normalizeText('[img=x.com/a5.png]图[/img]')).toBe('\u0000');
+  });
+  test('markdown 图片不命中', () => {
+    expect(normalizeText('![截图](https://x.com/a5.png)')).toBe('\u0000');
+  });
+  test('全角域名/扩展名经 NFKC 折叠后同样豁免', () => {
+    expect(normalizeText('ｉｍｇｕｒ．ｃｏｍ／ａ５ａｂｃ．ｐｎｇ')).toBe('\u0000');
+  });
+  test('多张图片分属不同 token 时各自替换为占位符，不拼接出新命中', () => {
+    expect(normalizeText('发我x.jpg y.png两张图')).toBe('\u0000\u0000两张图');
+  });
+  test('同一 token 内多个后缀只剔除到首个（锚定起点换线性的代价，等同 0.1.4 行为）', () => {
+    expect(normalizeText('发我x.jpg和y.png两张图')).toBe('\u0000和y.png两张图');
+  });
+  test('非图片后缀的文件链接不在豁免范围', () => {
+    expect(normalizeText('a5repo.zip')).toBe('a5repo.zip');
+  });
+  test('matchKeywords：裸域名图片链接整体不触发', () => {
+    expect(matchKeywords('图 imgur.com/a5abc.png 看看', kws)).toBeNull();
+    expect(matchKeywords('[img]x.com/a5.png[/img]', kws)).toBeNull();
+    expect(matchKeywords('看 markdown 图 ![x](imgur.com/a5.png) 就好', kws)).toBeNull();
+  });
+  test('matchKeywords：图片链接剔除不放过正文 a5 文字', () => {
+    expect(matchKeywords('a5图包 x.com/a5.png', kws)).toBe('a5');
+  });
+  test('超长无空格输入线性完成（回归：惰性起扫曾为二次方）', () => {
+    expect(normalizeText('啊'.repeat(100000))).toBe('啊'.repeat(100000));
+    expect(normalizeText('x'.repeat(99995) + '.jpx')).toBe('x'.repeat(99995) + '.jpx');
+    expect(normalizeText('y'.repeat(99996) + '.png')).toBe('\u0000');
+  });
+});
+
 describe('isNewerVersion', () => {
   test('高版本返回 true', () => {
     expect(isNewerVersion('0.1.3', '0.1.2')).toBe(true);

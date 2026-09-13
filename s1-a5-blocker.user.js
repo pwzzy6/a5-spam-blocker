@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S1 a5 内容屏蔽器
 // @namespace    https://github.com/pwzzy6/a5-spam-blocker
-// @version      0.1.4
+// @version      0.1.5
 // @description  折叠 stage1st（S1）帖子页中包含 a5（哎小呜）内容的楼层与引用块，点击可展开
 // @author       pwzzy6
 // @match        https://stage1st.com/2b/*
@@ -25,7 +25,7 @@
   // ============ 纯函数（供单测复用） ============
 
   // 当前版本；必须与头部 @version 一致（单测有一致性校验）
-  const SCRIPT_VERSION = '0.1.4';
+  const SCRIPT_VERSION = '0.1.5';
 
   // 更新检查源（国内可直连的 jsDelivr 双域名，任一可达即止）；
   // 请求前按 UPDATE_HOSTS 白名单校验 host，只放行 https + 这两个域名
@@ -51,14 +51,22 @@
     return false;
   }
 
-  // 归一化：NFKC 折叠全角/兼容字符（ａ５ → a5），小写化，剔除 URL（链接里的 a5 不参与匹配，防误封；
-  // 替换为 \u0000 占位而非删除，避免剔除后两侧字符拼接出新命中），去除空白与零宽字符
+  // 归一化：NFKC 折叠全角/兼容字符（ａ５ → a5），小写化，剔除 URL 与图片链接（链接里的 a5 不参与匹配，
+  // 防误封；替换为 \u0000 占位而非删除，避免剔除后两侧字符拼接出新命中），去除空白与零宽字符。
+  // 图片链接三种文本形态：[img] BBCode 残留、markdown 图片、含图片扩展名的裸域名 token——
+  // 前两者须在 http 规则之前剔除，否则 http 的 \S+ 会连 [/img] 一起吞掉、留下无配对的 [img]。
+  // 裸域名规则锚定 token 起点（^/空白/占位符之后）：惰性 [^\s]+? 若允许从任意位置起扫，在
+  // 无空格长串（中文正文常态）上是二次方复杂度，会冻结主线程；捕获组 1 吞掉的边界字符原样吐回。
+  // 代价：同一 token 内含多个图片后缀时只剔除到首个（等同 0.1.4 的已发布行为，不构成回归）
   function normalizeText(s) {
     return String(s == null ? '' : s)
       .normalize('NFKC')
       .toLowerCase()
+      .replace(/\[img(?:=[^\]]*)?\][^\[]*\[\/img\]/gi, '\u0000')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, '\u0000')
       .replace(/https?:\/\/\S+/g, '\u0000')
       .replace(/\bwww\.\S+/g, '\u0000')
+      .replace(/(^|[\s\u0000])([^\s]+?\.(?:jpg|jpeg|png|gif|webp|bmp|svg|avif)(?:[?#]\S*)?)/gi, '$1\u0000')
       .replace(/[\s\u200b-\u200f\u2028\u2029\u2060\ufeff]/g, '');
   }
 

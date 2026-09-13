@@ -4,7 +4,8 @@
   所有用户名与内容均为合成数据，不含任何真实帖子内容。
   覆盖场景：普通楼层 / a5 命中折叠 / 引用块独立折叠 / 全角变体 / 自己的楼层豁免 /
             纯图片楼层（不可识别，预期保持可见）/ URL 含 a5（豁免不折叠）/
-            URL 行后紧跟 a5 正文（豁免 URL 但正文照常命中）/ MutationObserver 动态插入
+            URL 行后紧跟 a5 正文（豁免 URL 但正文照常命中）/ 裸域名图片链接（豁免不折叠）/
+            MutationObserver 动态插入
 -->
 <html>
 <head>
@@ -214,6 +215,28 @@
     <div class="pct"><div class="pcb">
      <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1009"><a href="https://img.example.com/a5/cat.jpg" target="_blank">https://img.example.com/a5/cat.jpg</a><br />a5：今天的repo整理</td></tr></table></div>
      <div id="comment_1009" class="cm"></div>
+    </div></div>
+   </td>
+  </tr>
+  <tr><td class="plc plm"></td></tr>
+  </table></div>
+
+  <!-- 9. 裸域名图片链接（无协议、含图片后缀，正文无其他 a5 文字）：预期不折叠（图片链接豁免） -->
+  <div id="post_1010"><table id="pid1010" class="plhin" summary="pid1010" cellspacing="0" cellpadding="0">
+  <tr>
+   <td class="pls" rowspan="2">
+    <div id="favatar1010" class="pls cl favatar">
+     <div class="pi"><div class="authi"><a href="space-uid-200011.html" target="_blank" class="xw1">ivan</a></div></div>
+    </div>
+   </td>
+   <td class="plc">
+    <div class="pi">
+     <strong><a id="postnum1010" href="javascript:;"><em>9</em><sup>#</sup></a></strong>
+     <div class="pti"><div class="authi"><em id="authorposton1010">发表于 2026-8-21 12:00</em></div></div>
+    </div>
+    <div class="pct"><div class="pcb">
+     <div class="t_fsz"><table cellspacing="0" cellpadding="0"><tr><td class="t_f" id="postmessage_1010">图直链：imgur.com/a5abc.png<br />备用：x.com/a5/1.jpg?v=2</td></tr></table></div>
+     <div id="comment_1010" class="cm"></div>
     </div></div>
    </td>
   </tr>
